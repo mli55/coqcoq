@@ -1,0 +1,358 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<link href="common/css/sf.css" rel="stylesheet" type="text/css"/>
+<title>FinalProjectInstructions</title>
+</head>
+<link href="common/jquery-ui/jquery-ui.css" rel="stylesheet">
+<script src="common/jquery-ui/external/jquery/jquery.js"></script>
+<script src="common/jquery-ui/jquery-ui.js"></script>
+<script src="common/toggleproofs.js"></script>
+<link href="common/css/SJTU_pl.css" rel="stylesheet" type="text/css"/>
+
+<body>
+
+<div id="page">
+
+
+<div id="main">
+
+<h1 class="libtitle">FinalProjectInstructions</h1>
+
+
+<div class="doc">
+<a name="lab241"></a><h1 class="section">General Instructions</h1>
+
+<div class="paragraph"> </div>
+
+ The final project in CS 263 contains two parts:
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> an assignment like normal ones (but longer), done alone (10pt);
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> an open-ended programming language theorem proving project, done
+      in a small team (30pt).
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+The rest of this page explains what you are expected to do in the second part.
+You should strongly consider using a version control system (e.g., git or svn)
+to manage the files for the source code in this project. 
+<div class="paragraph"> </div>
+
+<a name="lab242"></a><h1 class="section">Topics</h1>
+
+<div class="paragraph"> </div>
+
+ The open-ended project should be a Coq theorem proving project. Its topic
+should be related to the programming language theory or program verification.
+Here is a list of possible topics (a detailed explanation will be uploaded
+later):
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> Bourbaki-Witt fixpoint theorem and its three applications
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Equivalence among 3 denotational semantics and small step semantics
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Small-steps vs. denotations for programs with break and continue
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Denotations vs. Hoare logic for programs with break and continue
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Denotations vs. Hoare logic for parallel programs
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Executable semantics for lambda calculus with reference and IO
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Executable semantics for programs with addresses, fork/join and IO
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Algorithm Correctness of Mobius transformation
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Algorithm Correctness of discrete Fourier transform
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Implementation Correctness of doubly linked list via VST
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+Students CAN pick a project which is NOT on this list above.
+
+<div class="paragraph"> </div>
+
+Students can even pick a project that overlaps with their lab work. For
+example, students who do research in a network lab may be interested in
+formalizing and verifying a network protocol. But keep in mind that CS 263
+final projects must be self-contained.
+
+<div class="paragraph"> </div>
+
+We will discuss other ideas during the class or by email.
+
+<div class="paragraph"> </div>
+
+Two teams cannot choose the same topic. For a popular topic, which team may work
+on it is determined by a first-come-first-get basis. So, send your proposal as
+early as possible! 
+<div class="paragraph"> </div>
+
+<a name="lab243"></a><h1 class="section">Teams</h1>
+
+<div class="paragraph"> </div>
+
+ Each team can contain 2 or 3 students. A team may have 1 or 4 students with
+permission of the instructor, although it is not suggested. Teams with more than
+4 members are not allowed. 
+<div class="paragraph"> </div>
+
+<a name="lab244"></a><h1 class="section">Schedule and Check Points</h1>
+
+<div class="paragraph"> </div>
+
+<a name="lab245"></a><h2 class="section">Team member confirmation</h2>
+
+<div class="paragraph"> </div>
+
+ Due date: May 1. All team members should send emails to intructors, listing
+the members' name of your team. Every team should have a team leader. His or her
+name should be highlighted in the email. 
+<div class="paragraph"> </div>
+
+<a name="lab246"></a><h2 class="section">Proposal submission</h2>
+
+<div class="paragraph"> </div>
+
+ Due date: May 7. Every team leader should send an email to the instructor
+describing what you want to prove in English or Chinese. 
+<div class="paragraph"> </div>
+
+<a name="lab247"></a><h2 class="section">Midterm report</h2>
+
+<div class="paragraph"> </div>
+
+ Due date: June 4. Every team leader should send your latest version (one or
+more Coq files) to the instructor via email. It should at least contain
+necessary definitions and your theorem's statement. 
+<div class="paragraph"> </div>
+
+<a name="lab248"></a><h2 class="section">Final submission</h2>
+
+<div class="paragraph"> </div>
+
+ Due date: June 29. Every team leader should send your final version to the
+instructor by email. It should contain all your Coq development and a README
+file explain the order of compilation and the main proof steps in english
+(very short). 
+<div class="paragraph"> </div>
+
+<a name="lab249"></a><h1 class="section">Grades</h1>
+
+<div class="paragraph"> </div>
+
+ Your final project's grade is composed by the following three parts:
+
+<div class="paragraph"> </div>
+
+Part 1: 20 points for task completion:
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> 20     : complete;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> 16 - 19: small number of minor holes appearing in proofs;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> 12 - 15: big number of minor holes appearing in proofs;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> 8 - 11 : one major hole in proofs;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> 0 - 7  : more than one major holes in proofs;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> one or two points may be taken off if you miss check points.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+Part 2: 5 points for being elegant in proofs:
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> Separate files when necessary
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> State important intermediate conclusions separately from your main theorem
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Use bullets and braces to demonstrate main proof structures.
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+Part 3: 5 points for task's difficulty:
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> 1: 4-student team on normal projects
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> 3: 3-student team on normal projects
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> 4: single student or 2-student team on normal projects
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> 5: self designed hard projects (graded when tasks are settled).
+
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+In principle, all members in the same team will get the same grade. 
+<div class="paragraph"> </div>
+
+<a name="lab250"></a><h1 class="section">Why you should use a version control system</h1>
+
+<div class="paragraph"> </div>
+
+ We highly recommend you to use a version control system (e.g., git or svn)
+to manage the files for the source code in this project. Here is why.
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> Popular version control systems are very accesible.
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Most IT companies use version control systems. You need to get familiar
+      with it anyway in the future.
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> You will not lose your developement (maybe 2 or 3 weeks work) due to
+      a computer breakdown.
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> You may have some back-and-forth when desiging definitions and proofs.
+      Version control systems can help you find your earlier versions back.
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> A version control system help record the contribution of every individual.
+      If your teammates complaint that you does not work hard on the project,
+      you can use these record to justify your own contribution. 
+</li>
+</ul>
+
+</div>
+<div class="code code-tight">
+
+<span class="comment">(*&nbsp;Mon&nbsp;Apr&nbsp;20&nbsp;09:23:10&nbsp;CST&nbsp;2020&nbsp;*)</span><br/>
+</div>
+</div>
+
+
+
+</div>
+
+</body>
+</html>

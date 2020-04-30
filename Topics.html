@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<link href="common/css/sf.css" rel="stylesheet" type="text/css"/>
+<title>Topics</title>
+</head>
+<link href="common/jquery-ui/jquery-ui.css" rel="stylesheet">
+<script src="common/jquery-ui/external/jquery/jquery.js"></script>
+<script src="common/jquery-ui/jquery-ui.js"></script>
+<script src="common/toggleproofs.js"></script>
+<link href="common/css/SJTU_pl.css" rel="stylesheet" type="text/css"/>
+
+<body>
+
+<div id="page">
+
+
+<div id="main">
+
+<h1 class="libtitle">Topics</h1>
+
+
+<div class="doc">
+Students CAN pick a project which is NOT on this list. 
+<div class="paragraph"> </div>
+
+<a name="lab335"></a><h1 class="section">Bourbaki-Witt fixpoint theorem and its three applications</h1>
+
+<div class="paragraph"> </div>
+
+ In this task, you should verify a fixpoint theorem. Specifically, your proof
+    should mainly follow Bourbaki-Witt's proof skeleton and use your theorem to
+    at least three denotational semantics. Show that:
+
+<div class="paragraph"> </div>
+
+<ul class="doclist">
+<li> Under some hypothesis about <span class="inlinecode"><span class="id" type="var">F</span></span>, <span class="inlinecode"><span class="id" type="var">F</span></span> has a fixpoint;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> Under some hypothesis about <span class="inlinecode"><span class="id" type="var">F</span></span>, we can construct <span class="inlinecode"><span class="id" type="var">F</span></span>'s least fixpoint;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> <span class="inlinecode"></span> <span class="inlinecode"><span class="id" type="var">F</span></span> <span class="inlinecode"><span class="id" type="var">X</span></span> <span class="inlinecode">=</span> <span class="inlinecode"><span class="id" type="var">if_sem</span></span> <span class="inlinecode">(<span class="id" type="var">seq_sem</span></span> <span class="inlinecode"><span class="id" type="var">D</span></span> <span class="inlinecode"><span class="id" type="var">X</span>)</span> <span class="inlinecode"><span class="id" type="var">skip_sem</span></span> <span class="inlinecode"></span> (informally) satisfies
+      the hypothese above;
+
+<div class="paragraph"> </div>
+
+
+</li>
+<li> The semantics of loops is equivalent with the least fixpoint constructed
+      above. 
+</li>
+</ul>
+
+<div class="paragraph"> </div>
+
+ Slot remaining: No. 
+<div class="paragraph"> </div>
+
+<a name="lab336"></a><h1 class="section">Equivalence among 3 denotational semantics and small step semantics</h1>
+
+<div class="paragraph"> </div>
+
+ You should first prove a general theorem which can be used to prove
+equivalence between two recursively defined semantics. Then, you need to prove
+the equivalence among three recursively defined denotational semantics: the
+normal one, the one with time, and the one with traces. In the end, you should
+connect small step semantics with each of them. 
+<div class="paragraph"> </div>
+
+ Slot remaining: Yes. 
+<div class="paragraph"> </div>
+
+<a name="lab337"></a><h1 class="section">Small-steps vs. denotations for programs with break and continue</h1>
+
+<div class="paragraph"> </div>
+
+ In this task, you should establish a relation among one denotational
+    semantics and two small step semantics for programs with control flow.
+    We showed a simple programming language sample and their semantics in class.
+    You may add more commands like C-like switch, function calls and/or other
+    loops. 
+<div class="paragraph"> </div>
+
+ Slot remaining: No. 
+<div class="paragraph"> </div>
+
+<a name="lab338"></a><h1 class="section">Denotations vs. Hoare logic for programs with break and continue</h1>
+
+<div class="paragraph"> </div>
+
+ In this task, you should establish a relation among the denotational
+    semantics and the Hoare logic for programs with control flow. We showed a
+    simple programming language sample and their semantics in class. You should
+    prove the logic sound and prove the logic complete under the expressiveness
+    assumption (you do not need to prove expressiveness). 
+<div class="paragraph"> </div>
+
+ Slot remaining: No. 
+<div class="paragraph"> </div>
+
+<a name="lab339"></a><h1 class="section">Denotations vs. Hoare logic for parallel programs</h1>
+
+<div class="paragraph"> </div>
+
+ In this task, you should establish a relation among the denotational
+    semantics and the Hoare logic for parallel programs. We showed a simple
+    programming language sample and their semantics in class. You should define
+    Hoare triples' validity and prove the logic sound. 
+<div class="paragraph"> </div>
+
+ Slot remaining: Yes. 
+<div class="paragraph"> </div>
+
+<a name="lab340"></a><h1 class="section">Executable semantics for lambda calculus with reference and IO</h1>
+
+<div class="paragraph"> </div>
+
+ You should define a lambda calculus with reference and IO, including its 
+    syntax, small step semantics and a next-state function. Then, you need to
+    prove that the next-state function and the small step semantics coincide.
+    In the end, you need to write a simple tactic to let it "run" some simple
+    program. 
+<div class="paragraph"> </div>
+
+ Slot remaining: No. 
+<div class="paragraph"> </div>
+
+<a name="lab341"></a><h1 class="section">Executable semantics for programs with addresses, fork and join and IO</h1>
+
+<div class="paragraph"> </div>
+
+ You should define an extension of Imp with addresses, fork and join,
+    including its syntax, small step semantics, a next-step function (based on a
+    scheduler). Then, you need to prove that the next-state function and the
+    small step semantics coincide. In the end, you need to write a simple tactic
+    to let it "run" some simple program. 
+<div class="paragraph"> </div>
+
+ Slot remaining: Yes. 
+<div class="paragraph"> </div>
+
+<a name="lab342"></a><h1 class="section">Algorithm Correctness of Mobius transformation</h1>
+
+<div class="paragraph"> </div>
+
+ You need to read Chapter 10.2, 10.3 and 10.3.1 of &lt;&lt;Parameterized
+    Algorithm&gt;&gt; by Marek Cygan. You should formalize the algorithm for coloring
+    counting using fast Mobius transformation. Its correctness is theorem 10.16
+    in the book. You should prove that algorithm's correctness in Coq.
+
+<div class="paragraph"> </div>
+
+    You only need to define this algorithm as a Coq function or a Coq relation
+    (small step description of this algorithm). You do not need to implement it
+    in a programming language like C. You do not need to verify its 
+    implementation in any programming language. 
+<div class="paragraph"> </div>
+
+ Slot remaining: No. 
+<div class="paragraph"> </div>
+
+<a name="lab343"></a><h1 class="section">Algorithm Correctness of fast Fourier transform (FFT)</h1>
+
+<div class="paragraph"> </div>
+
+ Discrete Fourier transformation can be used to compute big number's
+    multiplication. FFT is a well-known efficient algorithm to calculate
+    discrete fourier transformation. Your should learn how this algorithm works
+    and prove its correctness in Coq. You need to either define this algorithm
+    using complex numbers (you may find some library in Coq's standard library
+    or other Coq's user's contribution) or via an abstract ring with some extra
+    properties.
+
+<div class="paragraph"> </div>
+
+    You only need to define this algorithm as a Coq function or a Coq relation
+    (small step description of this algorithm). You do not need to implement it
+    in a programming language like C. You do not need to verify its 
+    implementation in any programming language. 
+<div class="paragraph"> </div>
+
+ Slot remaining: No. 
+<div class="paragraph"> </div>
+
+<a name="lab344"></a><h1 class="section">Implementation Correctness of doubly linked list via VST</h1>
+
+<div class="paragraph"> </div>
+
+ You should first write a doubly linked list library in C and then verify its
+    correctness using VST. This library should include the following functions:
+<pre>
+    struct node;
+    struct list;
+    struct node * begin(struct list * );
+    struct node * end(struct list * );
+    struct node * next(struct node * );
+    struct node * rbegin(struct list * );
+    struct node * rend(struct list * );
+    struct node * rnext(struct node * );
+    void push_back (struct list *, int );
+    void pop_back (struct list * );
+    void push_front (struct list *, int );
+    void pop_front (struct list * );
+</pre>
+
+<div class="paragraph"> </div>
+
+ Slot remaining: Yes. 
+</div>
+<div class="code code-tight">
+
+<span class="comment">(*&nbsp;Thu&nbsp;Apr&nbsp;30&nbsp;19:33:55&nbsp;CST&nbsp;2020&nbsp;*)</span><br/>
+</div>
+</div>
+
+
+
+</div>
+
+</body>
+</html>
