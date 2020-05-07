@@ -27,11 +27,12 @@ struct list * list_new (){
 }
 
 void list_free (struct list * l){
-    struct node * tmp;
-    while (l->head != NULL){
-        tmp = l->head->next;
-        freeN(l->head, sizeof (struct node));
-        l->head = tmp;
+    struct node * tmp = l->head;
+    while (tmp != NULL){
+        l->head = tmp->next;
+        freeN(tmp, sizeof (struct node));
+        l->size -= 1;
+        tmp = l->head;
     }
     freeN(l, sizeof (struct list));
 }
