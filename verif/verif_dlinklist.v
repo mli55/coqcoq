@@ -17,15 +17,14 @@ Definition t_struct_node := Tstruct _node noattr.
 Definition t_struct_list := Tstruct _list noattr.
 
 Definition node_rep (v : Z) (prev next p : val) : mpred :=
-  !! (is_pointer_or_null prev /\ is_pointer_or_null next) &&
   data_at Tsh t_struct_node 
     (Vint (Int.repr v), (prev, next)) p. 
 
-Fixpoint list_1n_rep (l : list Z) (head tail : val) : mpred :=
+Fixpoint list_1n_rep (l : list Z) (head tail : val) (prev : val) : mpred :=
   match l with
   | x :: l'   => EX old_head : val,
-    list_1n_rep l' old_head tail * node_rep x nullval old_head head 
-  | nil       => !! (head = nullval /\ tail = nullval) && emp
+    node_rep x prev old_head head * list_1n_rep l' old_head tail head
+  | nil       => !! (tail = prev /\ head = nullval) && emp
   end.
 
 Definition Z_length (l : list Z) : Z := Z.of_nat (length l).
@@ -33,12 +32,25 @@ Definition Z_length (l : list Z) : Z := Z.of_nat (length l).
 Definition list_rep (l : list Z) (p : val) : mpred :=
   EX head : val, EX tail : val, 
   data_at Tsh t_struct_list 
-    (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail.
+    (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail nullval.
 
 (* TODO: not sure whether necessary *)
-Definition list_full_rep (l : list Z) (head tail p : val) : mpred :=
+Definition list_full_rep (l : list Z) (head tail prev p : val) : mpred :=
   data_at Tsh t_struct_list 
-    (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail.
+    (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail prev.
+
+Definition list_fst (l : list Z) : option Z := 
+  match l with 
+  | x :: l'   => Some x
+  | nil       => None
+  end.
+
+Fixpoint list_lst (l : list Z) : option Z := 
+  match l with 
+  | nil       => None
+  | x :: nil  => Some x
+  | x :: l'   => list_lst l'
+  end.
 
 (***********************************************************************
 
@@ -129,75 +141,62 @@ Main proofs
 
 (* TODO: not sure whether useful *)
 Lemma node_rep_saturate_local:
-   forall x prev next p, node_rep x prev next p |-- !! is_pointer_or_null p.
+  forall x prev next p, node_rep x prev next p |-- !! is_pointer_or_null p.
 Proof.
   intros. unfold node_rep. entailer!.
 Qed.
+
 Hint Resolve node_rep_saturate_local: saturate_local.
 
 Lemma node_rep_valid_pointer:
-   forall x prev next p, node_rep x prev next p |-- valid_pointer p.
+  forall x prev next p, node_rep x prev next p |-- valid_pointer p.
 Proof.
   intros. unfold node_rep. entailer!.
 Qed.
+
 Hint Resolve node_rep_valid_pointer: valid_pointer.
 
 Lemma list_rep_saturate_local:
-   forall l p, list_rep l p |-- !! is_pointer_or_null p.
+  forall l p, list_rep l p |-- !! is_pointer_or_null p.
 Proof.
   intros. destruct l; unfold list_rep; simpl; Intros head tail; entailer!.
 Qed.
+
 Hint Resolve list_rep_saturate_local: saturate_local.
 
 Lemma list_rep_valid_pointer:
-   forall l p, list_rep l p |-- valid_pointer p.
+  forall l p, list_rep l p |-- valid_pointer p.
 Proof.
   intros. destruct l; unfold list_rep; simpl; Intros head tail; entailer!.
 Qed.
+
 Hint Resolve list_rep_valid_pointer: valid_pointer.
 
 Lemma list_1n_rep_saturate_local_head:
-   forall l head tail, list_1n_rep l head tail |-- !! is_pointer_or_null head.
+  forall l head tail prev, list_1n_rep l head tail prev |-- 
+    !! is_pointer_or_null head.
 Proof.
-  intros. 
-  destruct l; simpl.
+  intros l. 
+  destruct l; intros; simpl.
   - entailer!.
   - Intros old_head. entailer!.
 Qed.
+
 Hint Resolve list_1n_rep_saturate_local_head: saturate_local.
 
 Lemma list_1n_rep_valid_pointer_head:
-   forall l head tail, list_1n_rep l head tail |-- valid_pointer head.
+  forall l head tail prev, list_1n_rep l head tail prev |-- 
+    valid_pointer head.
 Proof.
-  intros. 
-  destruct l; simpl.
+  intros l. 
+  destruct l; intros; simpl.
   - entailer!.
   - Intros old_head. entailer!.
 Qed.
 Hint Resolve list_1n_rep_valid_pointer_head: valid_pointer.
 
-Lemma list_1n_rep_saturate_local_tail:
-   forall l head tail, list_1n_rep l head tail |-- !! is_pointer_or_null tail.
-Proof.
-  intros l. 
-  induction l; simpl.
-  - entailer!.
-  - intros. Intros old_head. sep_apply IHl. entailer!.
-Qed.
-Hint Resolve list_1n_rep_saturate_local_tail: saturate_local.
-
-Lemma list_1n_rep_valid_pointer_tail:
-   forall l head tail, list_1n_rep l head tail |-- valid_pointer tail.
-Proof.
-  intros l. 
-  induction l; simpl.
-  - entailer!.
-  - intros. Intros old_head. sep_apply IHl. entailer!.
-Qed.
-Hint Resolve list_1n_rep_valid_pointer_tail: valid_pointer.
-
-Lemma list_head_null : forall l tail, 
-  list_1n_rep l nullval tail |-- !! (l = nil /\ tail = nullval) && emp.
+Lemma list_head_null : forall l tail prev, 
+  list_1n_rep l nullval tail prev |-- !! (l = nil) && emp.
 Proof.
   intros.
   destruct l.
@@ -251,15 +250,13 @@ Proof.
   unfold list_rep.
   Intros head tail.
   forward.                              (* tmp = l->head;   *)
-  (* TODO: see why so strange here. *)
-  { sep_apply list_1n_rep_saturate_local_head. entailer!. } 
-  unfold LOOP_BODY, abbreviate.
   forward_while
   ( EX l' : list Z, EX head' : val, 
+    EX prev' : val, 
     PROP ()
     LOCAL (temp _l p; temp _tmp head')
-    SEP (list_full_rep l' head' tail p)).
-  { Exists l head. unfold list_full_rep. entailer!. }
+    SEP (list_full_rep l' head' tail prev' p)).
+  { Exists l head nullval. unfold list_full_rep. entailer!. }
   { unfold list_full_rep. entailer!. }
   { (* loop body *)
     unfold list_full_rep.
@@ -273,7 +270,7 @@ Proof.
     forward.
     forward.                            (* l->size -= 1;    *)
     forward.                            (* tmp = l->head;   *)
-    Exists (l', old_head).
+    Exists (l', old_head, head').
     unfold list_full_rep. 
     entailer!.
     rewrite Z_length_minus_1.
