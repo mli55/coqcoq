@@ -13,8 +13,8 @@ Memory representation of doubly link list
 
 ***********************************************************************)
 
-Definition t_struct_node := Tstruct _node noattr.
-Definition t_struct_list := Tstruct _list noattr.
+Definition t_struct_node : type := Tstruct _node noattr.
+Definition t_struct_list : type := Tstruct _list noattr.
 
 Definition node_rep (v : Z) (prev next p : val) : mpred :=
   data_at Tsh t_struct_node 
@@ -33,11 +33,6 @@ Definition list_rep (l : list Z) (p : val) : mpred :=
   EX head : val, EX tail : val, 
   data_at Tsh t_struct_list 
     (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail nullval.
-
-(* TODO: not sure whether necessary *)
-Definition list_full_rep (l : list Z) (head tail prev p : val) : mpred :=
-  data_at Tsh t_struct_list 
-    (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail prev.
 
 Definition list_fst (l : list Z) : option Z := 
   match l with 
@@ -112,8 +107,22 @@ Definition Gprog : funspecs :=
   ltac:(with_library prog [
     mallocN_spec;           (* vacuous truth! *)
     freeN_spec;             (* vacuous truth! *)
-    list_new_spec;
-    list_free_spec
+    list_new_spec;          (* OK! *)
+    list_free_spec          (* OK! *)
+    (* begin_spec *)
+    (* end_spec *)
+    (* rbegin_spec *)
+    (* rend_spec *)
+    (* get_size_spec *)
+    (* push_back_spec *)
+    (* pop_back_spec *)
+    (* push_front_spec *)
+    (* pop_front_spec *)
+    (* move_spec *)
+    (* insert_spec *)
+    (* delete_spec *)
+    (* merge_spec *)
+    (* split_K_spec *)
   ]).
 
 (***********************************************************************
@@ -255,11 +264,12 @@ Proof.
     EX prev' : val, 
     PROP ()
     LOCAL (temp _l p; temp _tmp head')
-    SEP (list_full_rep l' head' tail prev' p)).
-  { Exists l head nullval. unfold list_full_rep. entailer!. }
-  { unfold list_full_rep. entailer!. }
+    SEP (data_at Tsh t_struct_list 
+      (Vint (Int.repr (Z_length l')), (head', tail)) p * 
+      list_1n_rep l' head' tail prev'))%assert.
+  { Exists l head nullval. entailer!. }
+  { entailer!. }
   { (* loop body *)
-    unfold list_full_rep.
     destruct l'.
     { simpl. Intros. contradiction. }
     simpl. unfold node_rep. Intros old_head.
@@ -271,12 +281,10 @@ Proof.
     forward.                            (* l->size -= 1;    *)
     forward.                            (* tmp = l->head;   *)
     Exists (l', old_head, head').
-    unfold list_full_rep. 
     entailer!.
     rewrite Z_length_minus_1.
     entailer!.
   }
-  unfold list_full_rep.
   subst head'.
   sep_apply list_head_null.
   Intros.
