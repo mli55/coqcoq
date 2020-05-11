@@ -1,0 +1,8 @@
+*.vo
+*.glob
+*.v.d
+*.aux
+.depend
+*.cache
+CONFIGURE
+_CoqProject
