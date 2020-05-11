@@ -38,3 +38,33 @@ struct list * split (struct list * x, struct node * y);
 1. 基本完成 C 程序实现
 2. 初步设计了双向链表的内存表示
 3. 完成了 `list_new` 和 `list_free` 的证明
+
+## 注意事项
+
+在正式编译相关文件之前，请先保证根目录下包含以下文件：
+
+### `_CoqProject`
+
+该文件应包含类似以下的内容：
+```
+-Q . DL
+-Q ../../../../VST/msl VST.msl
+-Q ../../../../VST/sepcomp VST.sepcomp
+-Q ../../../../VST/veric VST.veric
+-Q ../../../../VST/floyd VST.floyd
+-Q ../../../../VST/progs VST.progs
+-R ../../../../VST/compcert compcert
+```
+
+第一行定义了该项目逻辑目录的名称，后面几行声明了 VST 的所在位置。
+
+### `CONFIGURE`
+
+该文件应包含类似以下的内容：
+```
+COQBIN=/cygdrive/D/Coq/bin/
+VST_DIR=../../VST
+NEED_VST=true
+```
+
+第一行声明了 Coq 的安装位置，第二行声明了 VST 的所在位置，第三行声明了需要 VST 进行开发。
