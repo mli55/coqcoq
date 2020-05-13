@@ -94,7 +94,7 @@ Definition list_free_spec :=
  DECLARE _list_free
   WITH p : val, l : list Z
   PRE  [ _l OF (tptr t_struct_list) ]
-    PROP (p <> nullval) 
+    PROP () 
     LOCAL (temp _l p) 
     SEP (list_rep l p)
   POST [ Tvoid ]
