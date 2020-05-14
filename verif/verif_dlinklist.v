@@ -34,17 +34,130 @@ Definition list_rep (l : list Z) (p : val) : mpred :=
   data_at Tsh t_struct_list 
     (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail nullval.
 
+(* TODO: may be not useful *)
 Definition list_fst (l : list Z) : option Z := 
   match l with 
   | x :: l'   => Some x
   | nil       => None
   end.
 
+(* TODO: may be not useful *)
 Fixpoint list_lst (l : list Z) : option Z := 
   match l with 
   | nil       => None
   | x :: nil  => Some x
   | x :: l'   => list_lst l'
+  end.
+
+Fixpoint list_nth (l : list Z) (n : nat) : (list Z) * (option Z) * (list Z) := 
+  match n with 
+  | O     =>
+    match l with
+    | x :: l'   => (nil, Some x, l')
+    | nil       => (nil, None, nil)
+    end
+  | S n'  =>
+    match l with
+    | x :: l'   => let '(l1, y, l2) := list_nth l' n' in (x :: l1, y, l2)
+    | nil       => list_nth nil n'
+    end
+  end.
+
+Fixpoint list_prefix (l : list Z) (n : nat) : list Z :=
+  match n with
+  | O     => nil
+  | S n'  => 
+    match l with
+    | x :: l'   => x :: (list_prefix l' n')
+    | nil       => list_prefix nil n'
+    end
+  end.
+
+Lemma nil_prefix_nil : forall n, list_prefix nil n = nil.
+Proof.
+  intros. induction n.
+  - reflexivity.
+  - simpl. exact IHn.
+Qed.
+
+Lemma list_decomposition : forall l n, exists (suf : list Z), 
+  l = (list_prefix l n) ++ suf.
+Proof.
+  intros l. induction l.
+  - intros. exists nil. simpl. rewrite nil_prefix_nil. reflexivity.
+  - intros. destruct n.
+    + exists (a :: l). simpl. reflexivity.
+    + specialize (IHl n). destruct IHl as [suf H].
+      simpl list_prefix.
+      exists suf. simpl.
+      rewrite <- H.
+      reflexivity. 
+Qed.
+
+(* TODO: not sure whether useful *)
+Lemma prefix_whole : forall l, 
+  list_prefix l (length l) = l.
+Proof.
+  intros. induction l.
+  - apply nil_prefix_nil.
+  - simpl. rewrite IHl. reflexivity.
+Qed.  
+
+Lemma list_nth_nil : forall n, 
+  list_nth nil n = (nil, None, nil).
+Proof.
+  intros. induction n.
+  - reflexivity.
+  - simpl. exact IHn.
+Qed.
+
+Lemma list_nth_prefix : forall l n l1 x l2, 
+  list_nth l n = (l1, x, l2) -> 
+  l1 = list_prefix l n.
+Proof.
+  intros l. induction l; intros.
+  - rewrite nil_prefix_nil. 
+    rewrite  list_nth_nil in H.
+    inversion H; subst; reflexivity.
+  - destruct n.
+    + simpl in *. inversion H; subst; reflexivity.
+    + simpl in *. 
+      remember (list_nth l n) as res.
+      destruct res as [[l3 y] l4].
+      inversion H; subst.
+      f_equal. 
+      apply IHl with (x:=x) (l2:=l2).
+      auto.
+Qed.
+
+Lemma list_nth_combine : forall (l l1 l2: list Z) (n : nat) (x : Z), 
+  list_nth l n = (l1, Some x, l2) -> l1 ++ [x] ++ l2 = l.
+Proof.
+  intros l.
+  induction l; intros.
+  - rewrite list_nth_nil in H. inversion H.
+  - destruct n.
+    + simpl in H. inversion H; subst.
+      reflexivity.
+    + simpl in H.
+      remember (list_nth l n) as res.
+      destruct res as [[l3 y] l4].
+      inversion H; subst.
+      symmetry in Heqres.
+      apply IHl in Heqres.
+      simpl in *. rewrite Heqres.
+      reflexivity.
+Qed.
+
+Definition list_single_out (l : list Z) (n : nat) (p : val) : mpred :=
+  match list_nth l n with
+  | (l1, None, l2)    => !! (p = nullval)
+  | (l1, Some x, l2)    => 
+    EX head1 : val, EX tail1 : val, 
+    EX head2 : val, EX tail2 : val,
+      list_1n_rep l1 head1 tail1 nullval * 
+      node_rep x tail1 head2 p *
+      list_1n_rep l2 head2 tail2 p
   end.
 
 (***********************************************************************
@@ -102,6 +215,20 @@ Definition list_free_spec :=
     LOCAL ()
     SEP (emp).
 
+(* begin *)
+Definition begin_spec :=
+ DECLARE _begin
+  WITH p : val, l : list Z
+  PRE  [ _l OF (tptr t_struct_list) ]
+    PROP () 
+    LOCAL (temp _l p) 
+    SEP (list_rep l p)
+  POST [ tptr t_struct_node ]
+    EX p : val, 
+    PROP ()
+    LOCAL ()
+    SEP (list_single_out l 0%nat p).
+
 (* all functions of the program *)
 Definition Gprog : funspecs :=
   ltac:(with_library prog [
@@ -109,7 +236,7 @@ Definition Gprog : funspecs :=
     freeN_spec;             (* vacuous truth! *)
     list_new_spec;          (* OK! *)
     list_free_spec          (* OK! *)
-    (* begin_spec *)
+    begin_spec 
     (* end_spec *)
     (* rbegin_spec *)
     (* rend_spec *)
