@@ -1,0 +1,3 @@
+COQBIN=/c/Coq/bin
+VSTDIR=../VST-Coq-win-i686/VST
+NEED_VST=true

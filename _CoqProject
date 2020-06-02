@@ -1,0 +1,1 @@
+-Q . DL -Q ../VST-Coq-win-i686/VST/msl VST.msl -Q ../VST-Coq-win-i686/VST/sepcomp VST.sepcomp -Q ../VST-Coq-win-i686/VST/veric VST.veric -Q ../VST-Coq-win-i686/VST/floyd VST.floyd -Q ../VST-Coq-win-i686/VST/progs VST.progs -R ../VST-Coq-win-i686/VST/compcert compcert
