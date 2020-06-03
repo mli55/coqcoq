@@ -9,6 +9,46 @@ Local Open Scope logic.
 
 (***********************************************************************
 
+Functional Specification
+
+***********************************************************************)
+
+Fixpoint list_nth_out (l : list Z) (n : nat) : (list Z) * (option Z) * (list Z) := 
+  match n with 
+  | O     =>
+    match l with
+    | x :: l'   => (nil, Some x, l')
+    | nil       => (nil, None, nil)
+    end
+  | S n'  =>
+    match l with
+    | x :: l'   => let '(l1, y, l2) := list_nth_out l' n' in (x :: l1, y, l2)
+    | nil       => list_nth_out nil n'
+    end
+  end.
+
+Fixpoint list_prefix (l : list Z) (n : nat) : list Z :=
+  match n with
+  | O     => nil
+  | S n'  => 
+    match l with
+    | x :: l'   => x :: (list_prefix l' n')
+    | nil       => list_prefix nil n'
+    end
+  end.
+
+Fixpoint list_index (l : list Z) (n : nat) : option Z :=
+  match l with
+  | x :: l'   => 
+    match n with
+    | O       => Some x
+    | S n'    => list_index l' n'
+    end
+  | nil       => None
+  end.
+
+(***********************************************************************
+
 Memory representation of doubly link list
 
 ***********************************************************************)
@@ -33,45 +73,6 @@ Definition list_rep (l : list Z) (p : val) : mpred :=
   EX head : val, EX tail : val, 
   data_at Tsh t_struct_list 
     (Vint (Int.repr (Z_length l)), (head, tail)) p * list_1n_rep l head tail nullval.
-
-(* TODO: may be not useful *)
-Definition list_fst (l : list Z) : option Z := 
-  match l with 
-  | x :: l'   => Some x
-  | nil       => None
-  end.
-
-(* TODO: may be not useful *)
-Fixpoint list_lst (l : list Z) : option Z := 
-  match l with 
-  | nil       => None
-  | x :: nil  => Some x
-  | x :: l'   => list_lst l'
-  end.
-
-Fixpoint list_nth (l : list Z) (n : nat) : (list Z) * (option Z) * (list Z) := 
-  match n with 
-  | O     =>
-    match l with
-    | x :: l'   => (nil, Some x, l')
-    | nil       => (nil, None, nil)
-    end
-  | S n'  =>
-    match l with
-    | x :: l'   => let '(l1, y, l2) := list_nth l' n' in (x :: l1, y, l2)
-    | nil       => list_nth nil n'
-    end
-  end.
-
-Fixpoint list_prefix (l : list Z) (n : nat) : list Z :=
-  match n with
-  | O     => nil
-  | S n'  => 
-    match l with
-    | x :: l'   => x :: (list_prefix l' n')
-    | nil       => list_prefix nil n'
-    end
-  end.
 
 Lemma nil_prefix_nil : forall n, list_prefix nil n = nil.
 Proof.
@@ -116,34 +117,56 @@ Proof.
 Qed.  
 
 Lemma list_nth_nil : forall n, 
-  list_nth nil n = (nil, None, nil).
+  list_nth_out nil n = (nil, None, nil).
 Proof.
   intros. induction n.
   - reflexivity.
   - simpl. exact IHn.
 Qed.
 
-Lemma list_nth_prefix : forall l n l1 x l2, 
-  list_nth l n = (l1, x, l2) -> 
-  l1 = list_prefix l n.
+Lemma list_nth_split : forall l n l1 x l2, 
+  list_nth_out l n = (l1, x, l2) -> 
+  l1 = list_prefix l n /\ x = list_index l n.
 Proof.
   intros l. induction l; intros.
   - rewrite nil_prefix_nil. 
-    rewrite  list_nth_nil in H.
-    inversion H; subst; reflexivity.
+    rewrite list_nth_nil in H.
+    inversion H; subst.
+    split; simpl; reflexivity.
   - destruct n.
-    + simpl in *. inversion H; subst; reflexivity.
+    + simpl in *. inversion H; subst; split; reflexivity.
     + simpl in *. 
-      remember (list_nth l n) as res.
+      remember (list_nth_out l n) as res.
       destruct res as [[l3 y] l4].
       inversion H; subst.
-      f_equal. 
-      apply IHl with (x:=x) (l2:=l2).
-      auto.
+      split.
+      * f_equal. 
+        apply IHl with (x:=x) (l2:=l2).
+        auto.
+      * symmetry in Heqres.
+        apply IHl in Heqres.
+        exact (proj2 Heqres).
 Qed.
 
+Lemma list_1n_split : forall l l1 l2, 
+  l = l1 ++ l2 ->
+  (forall head tail prev, 
+  list_1n_rep l head tail prev |--
+  EX head' : val, EX tail' : val, EX prev' : val,
+    list_1n_rep l1 head tail' prev' * list_1n_rep l2 head' tail tail').
+Proof.
+  intros l l1.
+  revert l.
+  induction l1; intros.
+  - simpl in H; subst.
+    Exists head prev nullval.
+    simpl list_1n_rep.
+    entailer!.
+  -  
+  
+
 Lemma list_nth_combine : forall (l l1 l2: list Z) (n : nat) (x : Z), 
-  list_nth l n = (l1, Some x, l2) -> l1 ++ [x] ++ l2 = l.
+  list_nth_out l n = (l1, Some x, l2) -> l1 ++ [x] ++ l2 = l.
 Proof.
   intros l.
   induction l; intros.
@@ -152,7 +175,7 @@ Proof.
     + simpl in H. inversion H; subst.
       reflexivity.
     + simpl in H.
-      remember (list_nth l n) as res.
+      remember (list_nth_out l n) as res.
       destruct res as [[l3 y] l4].
       inversion H; subst.
       symmetry in Heqres.
@@ -162,7 +185,7 @@ Proof.
 Qed.
 
 Definition list_single_out (l : list Z) (n : nat) (p : val) : mpred :=
-  match list_nth l n with
+  match list_nth_out l n with
   | (l1, None, l2)    => !! (p = nullval)
   | (l1, Some x, l2)    => 
     EX head1 : val, EX tail1 : val, 
@@ -430,9 +453,10 @@ Proof.
   forward.
   forward.                              (* return l->head; *)
   unfold list_single_out.
-  destruct (list_nth l 0) as [[l1 y] l2] eqn:E.
+  destruct (list_nth_out l 0) as [[l1 y] l2] eqn:E.
   destruct y.
-  - destruct l.
+  - (* not an empty linklist *)
+    destruct l.
     { (* show that l <> [] *)
       rewrite list_nth_nil in E.
       inversion E.
@@ -442,7 +466,8 @@ Proof.
     Intros old_head.
     Exists head head tail nullval nullval old_head tail.
     entailer!.
-  - Exists nullval head tail.
+  - (* an empty linklist *)
+    Exists nullval head tail.
     destruct l; [| inversion E].
     simpl in E; inversion E; subst.
     simpl list_1n_rep.
@@ -451,7 +476,6 @@ Proof.
 Qed.
 
 (* proof for end *)
-(*
 Theorem body_end: 
   semax_body Vprog Gprog f_end end_spec.
 Proof.
@@ -467,9 +491,10 @@ Proof.
   }
   forward.                              (* return l->tail; *)
   unfold list_single_out.
-  destruct (list_nth l 0) as [[l1 y] l2] eqn:E.
+  destruct (list_nth_out l ((length l) - 1)%nat) as [[l1 y] l2] eqn:E.
   destruct y.
-  - destruct l.
+  - (* not an empty linklist *)
+    destruct l.
     { (* show that l <> [] *)
       rewrite list_nth_nil in E.
       inversion E.
