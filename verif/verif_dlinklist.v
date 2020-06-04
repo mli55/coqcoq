@@ -147,15 +147,13 @@ Qed.
 Definition Z_length (l : list Z) : Z := Z.of_nat (length l).
 
 Definition list_rep (l : list Z) (p : val) : mpred :=
-  match l with
-  | x :: l'   => 
-      EX head : val, EX tail : val,
-      data_at Tsh t_struct_list 
+  EX head : val, EX tail : val,
+  !! (match l with
+      | x :: l'   => True
+      | nil       => head = nullval /\ tail = nullval
+      end) && data_at Tsh t_struct_list 
       (Vint (Int.repr (Z_length l)), (head, tail)) p *
-      list_1n_rep l head tail nullval
-  | nil       => data_at Tsh t_struct_list 
-      (Vint (Int.repr 0), (nullval, nullval)) p
-  end.
+      list_1n_rep l head tail nullval.
 
 Lemma list_rep_saturate_local:
   forall l p, list_rep l p |-- !! is_pointer_or_null p.
@@ -387,7 +385,6 @@ Definition list_free_spec :=
     SEP (emp).
 
 (* begin *)
-(* TODO: bad definition *)
 Definition begin_spec :=
  DECLARE _begin
   WITH p : val, l : list Z
@@ -398,7 +395,7 @@ Definition begin_spec :=
   POST [ tptr t_struct_node ]
     EX res : val, EX head : val, EX tail : val, 
     PROP ()
-    LOCAL ()
+    LOCAL (temp ret_temp res)
     SEP (data_at Tsh t_struct_list
           (Vint (Int.repr (Z_length l)), (head, tail)) p; 
           list_single_out l 0%nat res).
@@ -414,10 +411,23 @@ Definition end_spec :=
   POST [ tptr t_struct_node ]
     EX res : val, EX head : val, EX tail : val, 
     PROP ()
-    LOCAL ()
+    LOCAL (temp ret_temp res)
     SEP (data_at Tsh t_struct_list
           (Vint (Int.repr (Z_length l)), (head, tail)) p; 
           list_single_out l ((length l) - 1)%nat res).
+
+(* get_size *)
+Definition get_size_spec :=
+ DECLARE _get_size
+  WITH p : val, l : list Z
+  PRE  [ _l OF (tptr t_struct_list) ]
+    PROP () 
+    LOCAL (temp _l p) 
+    SEP (list_rep l p)
+  POST [ tuint ]
+    PROP ()
+    LOCAL (temp ret_temp (Vint (Int.repr (Z_length l))))
+    SEP (list_rep l p).
 
 (* all functions of the program *)
 Definition Gprog : funspecs :=
@@ -427,10 +437,10 @@ Definition Gprog : funspecs :=
     list_new_spec;          (* OK! *)
     list_free_spec;         (* OK! *)
     begin_spec;             (* OK! *)
-    end_spec                (* OK! *)
-    (* rbegin_spec *)
-    (* rend_spec *)
-    (* get_size_spec *)
+    end_spec;               (* OK! *)
+    (* rbegin_spec; *)
+    (* rend_spec; *)
+    get_size_spec
     (* push_back_spec *)
     (* pop_back_spec *)
     (* push_front_spec *)
@@ -514,12 +524,14 @@ Proof.
     Exists head head tail nullval nullval old_head tail.
     entailer!.
   - (* an empty linklist *)
-    Exists nullval head tail.
     destruct l; [| inversion E].
+    destruct H; subst.
     simpl in E; inversion E; subst.
     simpl list_1n_rep.
     Intros; subst.
+    Exists nullval nullval nullval.
     entailer!.
+    apply TT_right. 
 Qed.
 
 (* proof for end *)
@@ -533,7 +545,7 @@ Proof.
   { (* TODO: is there some shadowing? *)
     pose proof (list_1n_rep_saturate_local_tail l head tail nullval
     mapsto_memory_block.is_pointer_or_null_nullval).
-    sep_apply H.
+    sep_apply H0.
     entailer!.
   }
   forward.                              (* return l->tail; *)
@@ -547,9 +559,9 @@ Proof.
       inversion E.
     }
     pose proof (list_cons_app l z0).
-    destruct H1 as [l3 [a H1]].
-    destruct H1 as [H1 [H2 H3]].
-    rewrite H1.
+    destruct H2 as [l3 [a H2]].
+    destruct H2 as [H2 [H3 H4]].
+    rewrite H2.
     sep_apply list_1n_split.
     Intros head' tail'.
     simpl list_1n_rep at 2.
@@ -560,12 +572,12 @@ Proof.
     apply list_nth_tail in E. subst l2.
     (* TODO：这个 length 的化简可以考虑一下 *)
     simpl_length.
-    apply list_nth_split in H5.
-    destruct H5 as [H5 H6].
-    rewrite <- H2 in H5.
+    apply list_nth_split in H6.
+    destruct H6 as [H6 H7].
     rewrite <- H3 in H6.
+    rewrite <- H4 in H7.
     simpl list_1n_rep.
-    inversion H6; subst.
+    inversion H7; subst.
     entailer!.
   - (* empty linklist *)
     Exists nullval head tail.
@@ -575,34 +587,15 @@ Proof.
       apply list_nth_split in E.
       destruct E.
       pose proof (list_cons_app l z).
-      repeat destruct H3.
-      rewrite <- (proj2 H4) in H2.
+      repeat destruct H4.
+      rewrite <- (proj2 H5) in H3.
       discriminate.
     }
     simpl in E; inversion E; subst.
     simpl list_1n_rep.
     Intros; subst.
     entailer!.
-Qed.
-
-(* proof for list_new *)
-Theorem body_list_new: 
-  semax_body Vprog Gprog f_list_new list_new_spec.
-Proof.
-  start_function.
-  forward_call (sizeof t_struct_list).  (* mallocN *)
-  { computable. }
-  Intros p.
-  rewrite memory_block_data_at_ by auto.
-  forward.                              (* l->head = NULL;  *)
-  forward.                              (* l->tail = NULL;  *)
-  forward.                              (* l->size = 0;     *)
-  forward.                              (* return;          *)
-  Exists p. 
-  unfold list_rep. 
-  Exists nullval nullval.
-  simpl list_1n_rep.
-  entailer!.
+    apply TT_right. 
 Qed.
 
 (* proof for list_free *)
@@ -616,7 +609,7 @@ Proof.
   forward_while
   ( EX l' : list Z, EX head' : val, 
     EX prev' : val, 
-    PROP ()
+    PROP (l' <> [])
     LOCAL (temp _l p; temp _tmp head')
     SEP (data_at Tsh t_struct_list 
       (Vint (Int.repr (Z_length l')), (head', tail)) p * 
