@@ -100,11 +100,19 @@ Qed.
 
 Hint Resolve node_rep_valid_pointer: valid_pointer.
 
+(* TODO：这个选择是否足够的好？ *)
+Fixpoint list_1n_rep_aux (l : list Z) (head tail : val) (prev : val) : mpred :=
+  match l with
+  | x :: l'   => EX old_head : val,
+    node_rep x prev old_head head * list_1n_rep_aux l' old_head tail head
+  | nil       => !! (tail = prev /\ is_pointer_or_null head) && emp
+  end.
+
 Fixpoint list_1n_rep (l : list Z) (head tail : val) (prev : val) : mpred :=
   match l with
   | x :: l'   => EX old_head : val,
     node_rep x prev old_head head * list_1n_rep l' old_head tail head
-  | nil       => !! (tail = prev /\ is_pointer_or_null head) && emp
+  | nil       => !! (tail = prev /\ head = nullval) && emp
   end.
 
 Lemma list_1n_rep_saturate_local_head:
@@ -119,15 +127,28 @@ Qed.
 
 Hint Resolve list_1n_rep_saturate_local_head: saturate_local.
 
+Lemma list_1n_rep_aux_saturate_local_head:
+  forall l head tail prev, list_1n_rep_aux l head tail prev |-- 
+    !! is_pointer_or_null head.
+Proof.
+  intros l. 
+  destruct l; intros; simpl.
+  - entailer!.
+  - Intros old_head. entailer!.
+Qed.
+
+Hint Resolve list_1n_rep_aux_saturate_local_head: saturate_local.
+
 Lemma list_1n_rep_valid_pointer_head:
-  forall l head tail prev, l <> [] -> list_1n_rep l head tail prev |-- 
+  forall l head tail prev, list_1n_rep l head tail prev |-- 
     valid_pointer head.
 Proof.
   intros l. 
   destruct l; intros; simpl.
-  - contradiction.
+  - entailer!.
   - Intros old_head. entailer!.
 Qed.
+
 Hint Resolve list_1n_rep_valid_pointer_head: valid_pointer.
 
 Lemma list_1n_rep_saturate_local_tail:
@@ -144,14 +165,13 @@ Proof.
     entailer!.
 Qed.
 
+Hint Resolve list_1n_rep_saturate_local_tail: saturate_local.
+
 Definition Z_length (l : list Z) : Z := Z.of_nat (length l).
 
 Definition list_rep (l : list Z) (p : val) : mpred :=
   EX head : val, EX tail : val,
-  !! (match l with
-      | x :: l'   => True
-      | nil       => head = nullval /\ tail = nullval
-      end) && data_at Tsh t_struct_list 
+  data_at Tsh t_struct_list 
       (Vint (Int.repr (Z_length l)), (head, tail)) p *
       list_1n_rep l head tail nullval.
 
@@ -251,35 +271,6 @@ Proof.
         exact (proj2 Heqres).
 Qed.
 
-Lemma list_1n_split : forall l l1 l2, 
-  l = l1 ++ l2 ->
-  (forall head tail prev, 
-  list_1n_rep l head tail prev |--
-  EX head' : val, EX tail' : val, 
-    list_1n_rep l1 head tail' prev * list_1n_rep l2 head' tail tail').
-Proof.
-  intros l l1.
-  revert l.
-  induction l1; intros; simpl in H.
-  - subst.
-    Exists head prev.
-    simpl list_1n_rep.
-    entailer!.
-  - subst.
-    simpl list_1n_rep at 1.
-    Intros old_head.
-    assert (l1 ++ l2 = l1 ++ l2) by reflexivity.
-    specialize (IHl1 _ _ H).
-    clear H.
-    sep_apply IHl1.
-    clear IHl1.
-    Intros head' tail'.
-    Exists head' tail'.
-    simpl list_1n_rep.
-    Exists old_head.
-    entailer!.
-Qed.
-
 Lemma list_nth_tail : forall (l l1 l2: list Z) (x : option Z),
   list_nth_out l ((length l) - 1) = (l1, x, l2) ->
   l2 = nil.
@@ -318,13 +309,42 @@ Proof.
       reflexivity.
 Qed.
 
+Lemma list_1n_split : forall l l1 l2, 
+  l = l1 ++ l2 ->
+  (forall head tail prev, 
+  list_1n_rep l head tail prev |--
+  EX head' : val, EX tail' : val,  
+    list_1n_rep_aux l1 head tail' prev * list_1n_rep l2 head' tail tail').
+Proof.
+  intros l l1.
+  revert l.
+  induction l1; intros; simpl in H.
+  - subst.
+    Exists head prev.
+    simpl list_1n_rep_aux.
+    entailer!. 
+  - subst.
+    simpl list_1n_rep at 1.
+    Intros old_head.
+    assert (l1 ++ l2 = l1 ++ l2) by reflexivity.
+    specialize (IHl1 _ _ H).
+    clear H.
+    sep_apply IHl1.
+    clear IHl1.
+    Intros head' tail'.
+    Exists head' tail'.
+    simpl list_1n_rep_aux.
+    Exists old_head.
+    entailer!.
+Qed.
+
 Definition list_single_out (l : list Z) (n : nat) (p : val) : mpred :=
   match list_nth_out l n with
   | (l1, None, l2)    => !! (p = nullval)
   | (l1, Some x, l2)    => 
     EX head1 : val, EX tail1 : val, 
     EX head2 : val, EX tail2 : val,
-      list_1n_rep l1 head1 tail1 nullval * 
+      list_1n_rep_aux l1 head1 tail1 nullval * 
       node_rep x tail1 head2 p *
       list_1n_rep l2 head2 tail2 p
   end.
@@ -416,6 +436,38 @@ Definition end_spec :=
           (Vint (Int.repr (Z_length l)), (head, tail)) p; 
           list_single_out l ((length l) - 1)%nat res).
 
+(* rbegin *)
+Definition rbegin_spec :=
+ DECLARE _rbegin
+  WITH p : val, l : list Z
+  PRE  [ _l OF (tptr t_struct_list) ]
+    PROP () 
+    LOCAL (temp _l p) 
+    SEP (list_rep l p)
+  POST [ tptr t_struct_node ]
+    EX res : val, EX head : val, EX tail : val, 
+    PROP ()
+    LOCAL (temp ret_temp res)
+    SEP (data_at Tsh t_struct_list
+          (Vint (Int.repr (Z_length l)), (head, tail)) p; 
+          list_single_out l ((length l) - 1)%nat res).
+
+(* rend *)
+Definition rend_spec :=
+ DECLARE _rend
+  WITH p : val, l : list Z
+  PRE  [ _l OF (tptr t_struct_list) ]
+    PROP () 
+    LOCAL (temp _l p) 
+    SEP (list_rep l p)
+  POST [ tptr t_struct_node ]
+    EX res : val, EX head : val, EX tail : val, 
+    PROP ()
+    LOCAL (temp ret_temp res)
+    SEP (data_at Tsh t_struct_list
+          (Vint (Int.repr (Z_length l)), (head, tail)) p; 
+          list_single_out l 0%nat res).
+
 (* get_size *)
 Definition get_size_spec :=
  DECLARE _get_size
@@ -438,9 +490,9 @@ Definition Gprog : funspecs :=
     list_free_spec;         (* OK! *)
     begin_spec;             (* OK! *)
     end_spec;               (* OK! *)
-    (* rbegin_spec; *)
-    (* rend_spec; *)
-    get_size_spec
+    rbegin_spec;            (* OK! *)
+    rend_spec;              (* OK! *)
+    get_size_spec           (* OK! *)
     (* push_back_spec *)
     (* pop_back_spec *)
     (* push_front_spec *)
@@ -519,6 +571,7 @@ Proof.
       inversion E.
     }
     simpl in E; inversion E; subst.
+    simpl list_1n_rep_aux.
     simpl list_1n_rep.
     Intros old_head.
     Exists head head tail nullval nullval old_head tail.
@@ -545,7 +598,7 @@ Proof.
   { (* TODO: is there some shadowing? *)
     pose proof (list_1n_rep_saturate_local_tail l head tail nullval
     mapsto_memory_block.is_pointer_or_null_nullval).
-    sep_apply H0.
+    sep_apply H.
     entailer!.
   }
   forward.                              (* return l->tail; *)
@@ -559,12 +612,12 @@ Proof.
       inversion E.
     }
     pose proof (list_cons_app l z0).
-    destruct H2 as [l3 [a H2]].
-    destruct H2 as [H2 [H3 H4]].
-    rewrite H2.
+    destruct H1 as [l3 [a H1]].
+    destruct H1 as [H1 [H2 H3]].
+    rewrite H1.
     sep_apply list_1n_split.
     Intros head' tail'.
-    simpl list_1n_rep at 2.
+    simpl list_1n_rep at 1.
     Intros old_head.
     Exists head' head tail.
     Exists head tail' old_head tail.
@@ -574,8 +627,8 @@ Proof.
     simpl_length.
     apply list_nth_split in H6.
     destruct H6 as [H6 H7].
-    rewrite <- H3 in H6.
-    rewrite <- H4 in H7.
+    rewrite <- H3 in H7.
+    rewrite <- H2 in H6.
     simpl list_1n_rep.
     inversion H7; subst.
     entailer!.
@@ -587,8 +640,8 @@ Proof.
       apply list_nth_split in E.
       destruct E.
       pose proof (list_cons_app l z).
-      repeat destruct H4.
-      rewrite <- (proj2 H5) in H3.
+      repeat destruct H3.
+      rewrite <- (proj2 H4) in H2.
       discriminate.
     }
     simpl in E; inversion E; subst.
@@ -596,6 +649,139 @@ Proof.
     Intros; subst.
     entailer!.
     apply TT_right. 
+Qed.
+
+(* proof for rend, the same as begin *)
+Theorem body_rend: 
+  semax_body Vprog Gprog f_rend rend_spec.
+Proof.
+  start_function. 
+  unfold list_rep.
+  Intros head tail.
+  forward.
+  forward.                              (* return l->head; *)
+  unfold list_single_out.
+  destruct (list_nth_out l 0) as [[l1 y] l2] eqn:E.
+  destruct y.
+  - (* not an empty linklist *)
+    destruct l.
+    { (* show that l <> [] *)
+      rewrite list_nth_nil in E.
+      inversion E.
+    }
+    simpl in E; inversion E; subst.
+    simpl list_1n_rep_aux.
+    simpl list_1n_rep.
+    Intros old_head.
+    Exists head head tail nullval nullval old_head tail.
+    entailer!.
+  - (* an empty linklist *)
+    destruct l; [| inversion E].
+    destruct H; subst.
+    simpl in E; inversion E; subst.
+    simpl list_1n_rep.
+    Intros; subst.
+    Exists nullval nullval nullval.
+    entailer!.
+    apply TT_right. 
+Qed.
+
+(* proof for rbegin, the same as end *)
+Theorem body_rbegin: 
+  semax_body Vprog Gprog f_rbegin rbegin_spec.
+Proof.
+  start_function. 
+  unfold list_rep.
+  Intros head tail.
+  forward.
+  { (* TODO: is there some shadowing? *)
+    pose proof (list_1n_rep_saturate_local_tail l head tail nullval
+    mapsto_memory_block.is_pointer_or_null_nullval).
+    sep_apply H.
+    entailer!.
+  }
+  forward.                              (* return l->tail; *)
+  unfold list_single_out.
+  destruct (list_nth_out l ((length l) - 1)%nat) as [[l1 y] l2] eqn:E.
+  destruct y.
+  - (* not an empty linklist *)
+    destruct l.
+    { (* show that l <> [] *)
+      rewrite list_nth_nil in E.
+      inversion E.
+    }
+    pose proof (list_cons_app l z0).
+    destruct H1 as [l3 [a H1]].
+    destruct H1 as [H1 [H2 H3]].
+    rewrite H1.
+    sep_apply list_1n_split.
+    Intros head' tail'.
+    simpl list_1n_rep at 1.
+    Intros old_head.
+    Exists head' head tail.
+    Exists head tail' old_head tail.
+    pose proof E.
+    apply list_nth_tail in E. subst l2.
+    (* TODO：这个 length 的化简可以考虑一下 *)
+    simpl_length.
+    apply list_nth_split in H6.
+    destruct H6 as [H6 H7].
+    rewrite <- H3 in H7.
+    rewrite <- H2 in H6.
+    simpl list_1n_rep.
+    inversion H7; subst.
+    entailer!.
+  - (* empty linklist *)
+    Exists nullval head tail.
+    destruct l.
+    2: {
+      simpl_length.
+      apply list_nth_split in E.
+      destruct E.
+      pose proof (list_cons_app l z).
+      repeat destruct H3.
+      rewrite <- (proj2 H4) in H2.
+      discriminate.
+    }
+    simpl in E; inversion E; subst.
+    simpl list_1n_rep.
+    Intros; subst.
+    entailer!.
+    apply TT_right. 
+Qed.
+
+(* proof for get_size *)
+Theorem body_get_size: 
+  semax_body Vprog Gprog f_get_size get_size_spec.
+Proof.
+  start_function. 
+  unfold list_rep.
+  Intros head tail.
+  forward.
+  forward.
+  unfold list_rep.
+  Exists head tail.
+  entailer!.
+Qed.
+
+(* proof for list_new *)
+Theorem body_list_new: 
+  semax_body Vprog Gprog f_list_new list_new_spec.
+Proof.
+  start_function.
+  forward_call (sizeof t_struct_list).  (* mallocN *)
+  { computable. }
+  Intros p.
+  rewrite memory_block_data_at_ by auto.
+  forward.                              (* l->head = NULL;  *)
+  forward.                              (* l->tail = NULL;  *)
+  forward.                              (* l->size = 0;     *)
+  forward.                              (* return;          *)
+  Exists p. 
+  unfold list_rep. 
+  Exists nullval nullval.
+  simpl list_1n_rep.
+  entailer!.
 Qed.
 
 (* proof for list_free *)
@@ -609,7 +795,7 @@ Proof.
   forward_while
   ( EX l' : list Z, EX head' : val, 
     EX prev' : val, 
-    PROP (l' <> [])
+    PROP ()
     LOCAL (temp _l p; temp _tmp head')
     SEP (data_at Tsh t_struct_list 
       (Vint (Int.repr (Z_length l')), (head', tail)) p * 
