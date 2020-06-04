@@ -32,10 +32,12 @@ Ltac simpl_length :=
 
 (***********************************************************************
 
-Functional Specification
+Functional Specification and Lemmas
 
 ***********************************************************************)
 
+(** Split the list into three parts: 
+    the first n elements, the (n+1)th element, and the other elements. *)
 Fixpoint list_nth_out (l : list Z) (n : nat) : (list Z) * (option Z) * (list Z) := 
   match n with 
   | O     =>
@@ -50,6 +52,7 @@ Fixpoint list_nth_out (l : list Z) (n : nat) : (list Z) * (option Z) * (list Z) 
     end
   end.
 
+(** Take the prefix with length n of l. *)
 Fixpoint list_prefix (l : list Z) (n : nat) : list Z :=
   match n with
   | O     => nil
@@ -60,6 +63,7 @@ Fixpoint list_prefix (l : list Z) (n : nat) : list Z :=
     end
   end.
 
+(** Choose the (n+1)th element of l. *)
 Fixpoint list_index (l : list Z) (n : nat) : option Z :=
   match l with
   | x :: l'   => 
@@ -70,127 +74,7 @@ Fixpoint list_index (l : list Z) (n : nat) : option Z :=
   | nil       => None
   end.
 
-(***********************************************************************
-
-Memory representation of doubly link list
-
-***********************************************************************)
-
-Definition t_struct_node : type := Tstruct _node noattr.
-Definition t_struct_list : type := Tstruct _list noattr.
-
-Definition node_rep (v : Z) (prev next p : val) : mpred :=
-  data_at Tsh t_struct_node 
-    (Vint (Int.repr v), (prev, next)) p. 
-
-(* TODO: not sure whether useful *)
-Lemma node_rep_saturate_local:
-  forall x prev next p, node_rep x prev next p |-- !! is_pointer_or_null p.
-Proof.
-  intros. unfold node_rep. entailer!.
-Qed.
-
-Hint Resolve node_rep_saturate_local: saturate_local.
-
-Lemma node_rep_valid_pointer:
-  forall x prev next p, node_rep x prev next p |-- valid_pointer p.
-Proof.
-  intros. unfold node_rep. entailer!.
-Qed.
-
-Hint Resolve node_rep_valid_pointer: valid_pointer.
-
-(* TODO：这个选择是否足够的好？ *)
-Fixpoint list_1n_rep_aux (l : list Z) (head tail : val) (prev : val) : mpred :=
-  match l with
-  | x :: l'   => EX old_head : val,
-    node_rep x prev old_head head * list_1n_rep_aux l' old_head tail head
-  | nil       => !! (tail = prev /\ is_pointer_or_null head) && emp
-  end.
-
-Fixpoint list_1n_rep (l : list Z) (head tail : val) (prev : val) : mpred :=
-  match l with
-  | x :: l'   => EX old_head : val,
-    node_rep x prev old_head head * list_1n_rep l' old_head tail head
-  | nil       => !! (tail = prev /\ head = nullval) && emp
-  end.
-
-Lemma list_1n_rep_saturate_local_head:
-  forall l head tail prev, list_1n_rep l head tail prev |-- 
-    !! is_pointer_or_null head.
-Proof.
-  intros l. 
-  destruct l; intros; simpl.
-  - entailer!.
-  - Intros old_head. entailer!.
-Qed.
-
-Hint Resolve list_1n_rep_saturate_local_head: saturate_local.
-
-Lemma list_1n_rep_aux_saturate_local_head:
-  forall l head tail prev, list_1n_rep_aux l head tail prev |-- 
-    !! is_pointer_or_null head.
-Proof.
-  intros l. 
-  destruct l; intros; simpl.
-  - entailer!.
-  - Intros old_head. entailer!.
-Qed.
-
-Hint Resolve list_1n_rep_aux_saturate_local_head: saturate_local.
-
-Lemma list_1n_rep_valid_pointer_head:
-  forall l head tail prev, list_1n_rep l head tail prev |-- 
-    valid_pointer head.
-Proof.
-  intros l. 
-  destruct l; intros; simpl.
-  - entailer!.
-  - Intros old_head. entailer!.
-Qed.
-
-Hint Resolve list_1n_rep_valid_pointer_head: valid_pointer.
-
-Lemma list_1n_rep_saturate_local_tail:
-  forall l head tail prev, 
-    is_pointer_or_null prev -> list_1n_rep l head tail prev |-- 
-    !! is_pointer_or_null tail.
-Proof.
-  intros l. 
-  induction l; intros; simpl.
-  - entailer!.
-  - Intros old_head. 
-    assert_PROP (is_pointer_or_null head) by entailer!. 
-    sep_apply (IHl old_head tail head H0). 
-    entailer!.
-Qed.
-
-Hint Resolve list_1n_rep_saturate_local_tail: saturate_local.
-
-Definition Z_length (l : list Z) : Z := Z.of_nat (length l).
-
-Definition list_rep (l : list Z) (p : val) : mpred :=
-  EX head : val, EX tail : val,
-  data_at Tsh t_struct_list 
-      (Vint (Int.repr (Z_length l)), (head, tail)) p *
-      list_1n_rep l head tail nullval.
-
-Lemma list_rep_saturate_local:
-  forall l p, list_rep l p |-- !! is_pointer_or_null p.
-Proof.
-  intros. destruct l; unfold list_rep; try Intros head tail; entailer!.
-Qed.
-
-Hint Resolve list_rep_saturate_local: saturate_local.
-
-Lemma list_rep_valid_pointer:
-  forall l p, list_rep l p |-- valid_pointer p.
-Proof.
-  intros. destruct l; unfold list_rep; simpl; try Intros head tail; entailer!.
-Qed.
-
-Hint Resolve list_rep_valid_pointer: valid_pointer.
-
+(* auxiliary lemmas *)
 Lemma nil_prefix_nil : forall n, list_prefix nil n = nil.
 Proof.
   intros. induction n.
@@ -309,7 +193,132 @@ Proof.
       reflexivity.
 Qed.
 
-Lemma list_1n_split : forall l l1 l2, 
+(***********************************************************************
+
+Memory representation of doubly link list
+
+***********************************************************************)
+
+Definition t_struct_node : type := Tstruct _node noattr.
+Definition t_struct_list : type := Tstruct _list noattr.
+
+(** Memory representation of a node struct. *)
+Definition node_rep (v : Z) (prev next p : val) : mpred :=
+  data_at Tsh t_struct_node 
+    (Vint (Int.repr v), (prev, next)) p. 
+
+(* TODO: not sure whether useful *)
+Lemma node_rep_saturate_local:
+  forall x prev next p, node_rep x prev next p |-- !! is_pointer_or_null p.
+Proof.
+  intros. unfold node_rep. entailer!.
+Qed.
+
+Hint Resolve node_rep_saturate_local: saturate_local.
+
+Lemma node_rep_valid_pointer:
+  forall x prev next p, node_rep x prev next p |-- valid_pointer p.
+Proof.
+  intros. unfold node_rep. entailer!.
+Qed.
+
+Hint Resolve node_rep_valid_pointer: valid_pointer.
+
+(** Memory representation of a dlinklist. *)
+Fixpoint list_1n_rep_aux (l : list Z) (head tail : val) (prev : val) : mpred :=
+  match l with
+  | x :: l'   => EX old_head : val,
+    node_rep x prev old_head head * list_1n_rep_aux l' old_head tail head
+  | nil       => !! (tail = prev /\ is_pointer_or_null head) && emp
+  end.
+
+(** Memory representation of a dlinklist. If l is empty then head will be NULL. *)
+Fixpoint list_1n_rep (l : list Z) (head tail : val) (prev : val) : mpred :=
+  match l with
+  | x :: l'   => EX old_head : val,
+    node_rep x prev old_head head * list_1n_rep l' old_head tail head
+  | nil       => !! (tail = prev /\ head = nullval) && emp
+  end.
+
+Lemma list_1n_rep_saturate_local_head:
+  forall l head tail prev, list_1n_rep l head tail prev |-- 
+    !! is_pointer_or_null head.
+Proof.
+  intros l. 
+  destruct l; intros; simpl.
+  - entailer!.
+  - Intros old_head. entailer!.
+Qed.
+
+Hint Resolve list_1n_rep_saturate_local_head: saturate_local.
+
+Lemma list_1n_rep_aux_saturate_local_head:
+  forall l head tail prev, list_1n_rep_aux l head tail prev |-- 
+    !! is_pointer_or_null head.
+Proof.
+  intros l. 
+  destruct l; intros; simpl.
+  - entailer!.
+  - Intros old_head. entailer!.
+Qed.
+
+Hint Resolve list_1n_rep_aux_saturate_local_head: saturate_local.
+
+Lemma list_1n_rep_valid_pointer_head:
+  forall l head tail prev, list_1n_rep l head tail prev |-- 
+    valid_pointer head.
+Proof.
+  intros l. 
+  destruct l; intros; simpl.
+  - entailer!.
+  - Intros old_head. entailer!.
+Qed.
+
+Hint Resolve list_1n_rep_valid_pointer_head: valid_pointer.
+
+Lemma list_1n_rep_saturate_local_tail:
+  forall l head tail prev, 
+    is_pointer_or_null prev -> list_1n_rep l head tail prev |-- 
+    !! is_pointer_or_null tail.
+Proof.
+  intros l. 
+  induction l; intros; simpl.
+  - entailer!.
+  - Intros old_head. 
+    assert_PROP (is_pointer_or_null head) by entailer!. 
+    sep_apply (IHl old_head tail head H0). 
+    entailer!.
+Qed.
+
+Hint Resolve list_1n_rep_saturate_local_tail: saturate_local.
+
+Definition Z_length (l : list Z) : Z := Z.of_nat (length l).
+
+(** Memory representation of a list struct. *)
+Definition list_rep (l : list Z) (p : val) : mpred :=
+  EX head : val, EX tail : val,
+  data_at Tsh t_struct_list 
+      (Vint (Int.repr (Z_length l)), (head, tail)) p *
+      list_1n_rep l head tail nullval.
+
+Lemma list_rep_saturate_local:
+  forall l p, list_rep l p |-- !! is_pointer_or_null p.
+Proof.
+  intros. destruct l; unfold list_rep; try Intros head tail; entailer!.
+Qed.
+
+Hint Resolve list_rep_saturate_local: saturate_local.
+
+Lemma list_rep_valid_pointer:
+  forall l p, list_rep l p |-- valid_pointer p.
+Proof.
+  intros. destruct l; unfold list_rep; simpl; try Intros head tail; entailer!.
+Qed.
+
+Hint Resolve list_rep_valid_pointer: valid_pointer.
+
+(** A list can be split into two parts. This will be useful. *)
+Theorem list_1n_split : forall l l1 l2, 
   l = l1 ++ l2 ->
   (forall head tail prev, 
   list_1n_rep l head tail prev |--
@@ -338,6 +347,8 @@ Proof.
     entailer!.
 Qed.
 
+(** An equivalent representation of dlinklist, but the (n+1)th element 
+    is singled out. *)
 Definition list_single_out (l : list Z) (n : nat) (p : val) : mpred :=
   match list_nth_out l n with
   | (l1, None, l2)    => !! (p = nullval)
@@ -481,7 +492,7 @@ Definition get_size_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr (Z_length l))))
     SEP (list_rep l p).
 
-(* all functions of the program *)
+(** All functions of the program. *)
 Definition Gprog : funspecs :=
   ltac:(with_library prog [
     mallocN_spec;           (* vacuous truth! *)
@@ -623,7 +634,6 @@ Proof.
     Exists head tail' old_head tail.
     pose proof E.
     apply list_nth_tail in E. subst l2.
-    (* TODO：这个 length 的化简可以考虑一下 *)
     simpl_length.
     apply list_nth_split in H6.
     destruct H6 as [H6 H7].
@@ -722,7 +732,6 @@ Proof.
     Exists head tail' old_head tail.
     pose proof E.
     apply list_nth_tail in E. subst l2.
-    (* TODO：这个 length 的化简可以考虑一下 *)
     simpl_length.
     apply list_nth_split in H6.
     destruct H6 as [H6 H7].
