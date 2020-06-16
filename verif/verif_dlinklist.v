@@ -519,6 +519,32 @@ Definition rnext_spec :=
     LOCAL (temp ret_temp prev)
     SEP (node_rep x prev next p).
 
+(* push_back *)
+Definition push_back_spec :=
+ DECLARE _push_back
+  WITH p : val, l : list Z, v : Z
+  PRE  [ _l OF (tptr t_struct_list), _v OF tuint ]
+    PROP () 
+    LOCAL (temp _l p; temp _v (Vint (Int.repr v))) 
+    SEP (list_rep l p)
+  POST [ Tvoid ]
+    PROP ()
+    LOCAL ()
+    SEP (list_rep (l ++ [v]) p).
+
+(* push_front *)
+Definition push_front_spec :=
+ DECLARE _push_front
+  WITH p : val, l : list Z, v : Z
+  PRE  [ _l OF (tptr t_struct_list), _v OF tuint ]
+    PROP () 
+    LOCAL (temp _l p; temp _v (Vint (Int.repr v))) 
+    SEP (list_rep l p)
+  POST [ Tvoid ]
+    PROP ()
+    LOCAL ()
+    SEP (list_rep (v :: l) p).
+
 (** All functions of the program. *)
 Definition Gprog : funspecs :=
   ltac:(with_library prog [
