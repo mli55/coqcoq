@@ -74,6 +74,8 @@ Fixpoint list_index (l : list Z) (n : nat) : option Z :=
   | nil       => None
   end.
 
+
+
 (* auxiliary lemmas *)
 Lemma nil_prefix_nil : forall n, list_prefix nil n = nil.
 Proof.
@@ -559,15 +561,16 @@ Definition Gprog : funspecs :=
     next_spec;
     rnext_spec;
     get_size_spec           (* OK! *)
+    (* Above : joint work *)
     (* push_back_spec *)
-    (* pop_back_spec *)
+    (* pop_back_spec : By Jiale Zhang *)
     (* push_front_spec *)
-    (* pop_front_spec *)
+    (* pop_front_spec : By Mengning Li *)
+    (* merge_spec *)
+    (* split_K_spec : By Qiyuan Zhao *)
     (* move_spec *)
     (* insert_spec *)
     (* delete_spec *)
-    (* merge_spec *)
-    (* split_K_spec *)
   ]).
 
 (***********************************************************************
@@ -625,7 +628,8 @@ Proof.
   start_function.
   unfold node_rep.
   forward.                              (* return p->next; *)
-  
+Abort.
+
 (* proof for begin *)
 Theorem body_begin: 
   semax_body Vprog Gprog f_begin begin_spec.
