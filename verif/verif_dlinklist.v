@@ -492,6 +492,33 @@ Definition get_size_spec :=
     LOCAL (temp ret_temp (Vint (Int.repr (Z_length l))))
     SEP (list_rep l p).
 
+(* next *)
+Definition next_spec :=
+ DECLARE _next
+  WITH p : val, x : Z, prev : val, next : val
+  PRE  [ _p OF (tptr t_struct_node) ]
+    PROP () 
+    (* 是否应该用 is_pointer_or_null 解决？ *)
+    LOCAL (temp _p p) 
+    SEP (node_rep x prev next p)
+  POST [ tptr t_struct_node ]
+    PROP ()
+    LOCAL (temp ret_temp next)
+    SEP (node_rep x prev next p).
+
+(* rnext *)
+Definition rnext_spec :=
+ DECLARE _rnext
+  WITH p : val, x : Z, prev : val, next : val
+  PRE  [ _p OF (tptr t_struct_node) ]
+    PROP () 
+    LOCAL (temp _p p) 
+    SEP (node_rep x prev next p)
+  POST [ tptr t_struct_node ]
+    PROP ()
+    LOCAL (temp ret_temp prev)
+    SEP (node_rep x prev next p).
+
 (** All functions of the program. *)
 Definition Gprog : funspecs :=
   ltac:(with_library prog [
@@ -503,6 +530,8 @@ Definition Gprog : funspecs :=
     end_spec;               (* OK! *)
     rbegin_spec;            (* OK! *)
     rend_spec;              (* OK! *)
+    next_spec;
+    rnext_spec;
     get_size_spec           (* OK! *)
     (* push_back_spec *)
     (* pop_back_spec *)
@@ -563,6 +592,14 @@ Proof.
   lia.
 Qed.
 
+(* proof for next *)
+Theorem body_next: 
+  semax_body Vprog Gprog f_next next_spec.
+Proof.
+  start_function.
+  unfold node_rep.
+  forward.                              (* return p->next; *)
+  
 (* proof for begin *)
 Theorem body_begin: 
   semax_body Vprog Gprog f_begin begin_spec.

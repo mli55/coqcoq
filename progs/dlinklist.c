@@ -53,6 +53,14 @@ struct node * rend (struct list * l){
     return l->head;
 }
 
+struct node * next (struct node * p){
+    return p->next;
+}
+
+struct node * rnext (struct node * p){
+    return p->prev;
+}
+
 unsigned get_size (struct list * l){
     return l->size;
 }
