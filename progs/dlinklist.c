@@ -53,6 +53,14 @@ struct node * rend (struct list * l){
     return l->head;
 }
 
+struct node * next (struct node * p){
+    return p->next;
+}
+
+struct node * rnext (struct node * p){
+    return p->prev;
+}
+
 unsigned get_size (struct list * l){
     return l->size;
 }
@@ -68,12 +76,14 @@ void push_back (struct list * l, unsigned int v){
     }else {
         l->tail->next = nd;
     }
+    l->tail = nd;
+    
+
 }
 
-unsigned int pop_back (struct list * l){
-    if (l->tail == NULL){
-        return DEFAULT;
-    }
+//unsigned int pop_back (struct list * l){
+void pop_back (struct list * l){
+    //if (l->tail == NULL){return DEFAULT;}
     unsigned int res = l->tail->val;
     struct node * tmp = l->tail;
     l->tail = tmp->prev;
@@ -85,7 +95,7 @@ unsigned int pop_back (struct list * l){
     }else {
         l->tail->next = NULL;
     }
-    return res;
+   // return res;
 }
 
 void push_front (struct list * l, unsigned int v){
@@ -99,12 +109,13 @@ void push_front (struct list * l, unsigned int v){
     }else {
         l->head->prev = nd;
     }
+    l->head = nd;
+    
 }
 
-unsigned int pop_front (struct list * l){
-    if (l->head == NULL){
-        return DEFAULT;
-    }
+//unsigned int pop_front (struct list * l){
+void pop_front (struct list * l){
+    //if (l->head == NULL){return DEFAULT;}
     unsigned int res = l->head->val;
     struct node * tmp = l->head;
     l->head = tmp->next;
@@ -116,7 +127,7 @@ unsigned int pop_front (struct list * l){
     }else {
         l->head->prev = NULL;
     }
-    return res;
+    //return res;
 }
 
 struct node * move (struct list * l, int pos){
