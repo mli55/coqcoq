@@ -665,7 +665,7 @@ Definition f_pop_front := {|
 Definition f_move := {|
   fn_return := (tptr (Tstruct _node noattr));
   fn_callconv := cc_default;
-  fn_params := ((_l, (tptr (Tstruct _list noattr))) :: (_pos, tint) :: nil);
+  fn_params := ((_l, (tptr (Tstruct _list noattr))) :: (_pos, tuint) :: nil);
   fn_vars := nil;
   fn_temps := ((_res, (tptr (Tstruct _node noattr))) :: nil);
   fn_body :=
@@ -676,15 +676,15 @@ Definition f_move := {|
         (Tstruct _list noattr)) _head (tptr (Tstruct _node noattr))))
   (Ssequence
     (Swhile
-      (Ebinop Ogt (Etempvar _pos tint) (Econst_int (Int.repr 0) tint) tint)
+      (Ebinop Ogt (Etempvar _pos tuint) (Econst_int (Int.repr 0) tint) tint)
       (Ssequence
         (Sset _res
           (Efield
             (Ederef (Etempvar _res (tptr (Tstruct _node noattr)))
               (Tstruct _node noattr)) _next (tptr (Tstruct _node noattr))))
         (Sset _pos
-          (Ebinop Osub (Etempvar _pos tint) (Econst_int (Int.repr 1) tint)
-            tint))))
+          (Ebinop Osub (Etempvar _pos tuint) (Econst_int (Int.repr 1) tuint)
+            tuint))))
     (Sreturn (Some (Etempvar _res (tptr (Tstruct _node noattr)))))))
 |}.
 
@@ -727,7 +727,7 @@ Definition f_insert := {|
           (Scall (Some _t'1)
             (Evar _move (Tfunction
                           (Tcons (tptr (Tstruct _list noattr))
-                            (Tcons tint Tnil)) (tptr (Tstruct _node noattr))
+                            (Tcons tuint Tnil)) (tptr (Tstruct _node noattr))
                           cc_default))
             ((Etempvar _l (tptr (Tstruct _list noattr))) ::
              (Etempvar _pos tint) :: nil))
@@ -802,7 +802,7 @@ Definition f_insert := {|
 Definition f_delete := {|
   fn_return := tvoid;
   fn_callconv := cc_default;
-  fn_params := ((_l, (tptr (Tstruct _list noattr))) :: (_pos, tint) ::
+  fn_params := ((_l, (tptr (Tstruct _list noattr))) :: (_pos, tuint) ::
                 (_v, tuint) :: nil);
   fn_vars := nil;
   fn_temps := ((_res, (tptr (Tstruct _node noattr))) ::
@@ -813,7 +813,7 @@ Definition f_delete := {|
                (_t'4, (tptr (Tstruct _node noattr))) :: (_t'3, tuint) ::
                (_t'2, tuint) :: nil);
   fn_body :=
-(Sifthenelse (Ebinop Oeq (Etempvar _pos tint) (Econst_int (Int.repr 0) tint)
+(Sifthenelse (Ebinop Oeq (Etempvar _pos tuint) (Econst_int (Int.repr 0) tint)
                tint)
   (Scall None
     (Evar _pop_front (Tfunction (Tcons (tptr (Tstruct _list noattr)) Tnil)
@@ -824,7 +824,7 @@ Definition f_delete := {|
       (Efield
         (Ederef (Etempvar _l (tptr (Tstruct _list noattr)))
           (Tstruct _list noattr)) _size tuint))
-    (Sifthenelse (Ebinop Oeq (Etempvar _pos tint)
+    (Sifthenelse (Ebinop Oeq (Etempvar _pos tuint)
                    (Ebinop Osub (Etempvar _t'2 tuint)
                      (Econst_int (Int.repr 1) tint) tuint) tint)
       (Scall None
@@ -836,10 +836,10 @@ Definition f_delete := {|
           (Scall (Some _t'1)
             (Evar _move (Tfunction
                           (Tcons (tptr (Tstruct _list noattr))
-                            (Tcons tint Tnil)) (tptr (Tstruct _node noattr))
+                            (Tcons tuint Tnil)) (tptr (Tstruct _node noattr))
                           cc_default))
             ((Etempvar _l (tptr (Tstruct _list noattr))) ::
-             (Etempvar _pos tint) :: nil))
+             (Etempvar _pos tuint) :: nil))
           (Sset _res (Etempvar _t'1 (tptr (Tstruct _node noattr)))))
         (Ssequence
           (Ssequence
@@ -905,7 +905,8 @@ Definition f_merge := {|
   fn_params := ((_l1, (tptr (Tstruct _list noattr))) ::
                 (_l2, (tptr (Tstruct _list noattr))) :: nil);
   fn_vars := nil;
-  fn_temps := ((_t'9, (tptr (Tstruct _node noattr))) ::
+  fn_temps := ((_t'10, (tptr (Tstruct _node noattr))) ::
+               (_t'9, (tptr (Tstruct _node noattr))) ::
                (_t'8, (tptr (Tstruct _node noattr))) ::
                (_t'7, (tptr (Tstruct _node noattr))) ::
                (_t'6, (tptr (Tstruct _node noattr))) ::
@@ -916,55 +917,70 @@ Definition f_merge := {|
   fn_body :=
 (Ssequence
   (Ssequence
-    (Sset _t'7
+    (Sset _t'8
       (Efield
-        (Ederef (Etempvar _l1 (tptr (Tstruct _list noattr)))
-          (Tstruct _list noattr)) _tail (tptr (Tstruct _node noattr))))
-    (Sifthenelse (Ebinop One (Etempvar _t'7 (tptr (Tstruct _node noattr)))
+        (Ederef (Etempvar _l2 (tptr (Tstruct _list noattr)))
+          (Tstruct _list noattr)) _head (tptr (Tstruct _node noattr))))
+    (Sifthenelse (Ebinop One (Etempvar _t'8 (tptr (Tstruct _node noattr)))
                    (Ecast (Econst_int (Int.repr 0) tint) (tptr tvoid)) tint)
       (Ssequence
-        (Sset _t'8
+        (Sset _t'9
           (Efield
-            (Ederef (Etempvar _l1 (tptr (Tstruct _list noattr)))
-              (Tstruct _list noattr)) _tail (tptr (Tstruct _node noattr))))
+            (Ederef (Etempvar _l2 (tptr (Tstruct _list noattr)))
+              (Tstruct _list noattr)) _head (tptr (Tstruct _node noattr))))
         (Ssequence
-          (Sset _t'9
+          (Sset _t'10
             (Efield
-              (Ederef (Etempvar _l2 (tptr (Tstruct _list noattr)))
-                (Tstruct _list noattr)) _head (tptr (Tstruct _node noattr))))
+              (Ederef (Etempvar _l1 (tptr (Tstruct _list noattr)))
+                (Tstruct _list noattr)) _tail (tptr (Tstruct _node noattr))))
           (Sassign
             (Efield
-              (Ederef (Etempvar _t'8 (tptr (Tstruct _node noattr)))
-                (Tstruct _node noattr)) _next (tptr (Tstruct _node noattr)))
-            (Etempvar _t'9 (tptr (Tstruct _node noattr))))))
-      Sskip))
+              (Ederef (Etempvar _t'9 (tptr (Tstruct _node noattr)))
+                (Tstruct _node noattr)) _prev (tptr (Tstruct _node noattr)))
+            (Etempvar _t'10 (tptr (Tstruct _node noattr))))))
+      (Ssequence
+        (Scall None
+          (Evar _freeN (Tfunction (Tcons (tptr tvoid) (Tcons tint Tnil))
+                         tvoid cc_default))
+          ((Etempvar _l2 (tptr (Tstruct _list noattr))) ::
+           (Esizeof (Tstruct _list noattr) tuint) :: nil))
+        (Sreturn None))))
   (Ssequence
     (Ssequence
       (Sset _t'4
         (Efield
-          (Ederef (Etempvar _l2 (tptr (Tstruct _list noattr)))
-            (Tstruct _list noattr)) _head (tptr (Tstruct _node noattr))))
+          (Ederef (Etempvar _l1 (tptr (Tstruct _list noattr)))
+            (Tstruct _list noattr)) _tail (tptr (Tstruct _node noattr))))
       (Sifthenelse (Ebinop One (Etempvar _t'4 (tptr (Tstruct _node noattr)))
                      (Ecast (Econst_int (Int.repr 0) tint) (tptr tvoid))
                      tint)
+        (Ssequence
+          (Sset _t'6
+            (Efield
+              (Ederef (Etempvar _l1 (tptr (Tstruct _list noattr)))
+                (Tstruct _list noattr)) _tail (tptr (Tstruct _node noattr))))
+          (Ssequence
+            (Sset _t'7
+              (Efield
+                (Ederef (Etempvar _l2 (tptr (Tstruct _list noattr)))
+                  (Tstruct _list noattr)) _head
+                (tptr (Tstruct _node noattr))))
+            (Sassign
+              (Efield
+                (Ederef (Etempvar _t'6 (tptr (Tstruct _node noattr)))
+                  (Tstruct _node noattr)) _next
+                (tptr (Tstruct _node noattr)))
+              (Etempvar _t'7 (tptr (Tstruct _node noattr))))))
         (Ssequence
           (Sset _t'5
             (Efield
               (Ederef (Etempvar _l2 (tptr (Tstruct _list noattr)))
                 (Tstruct _list noattr)) _head (tptr (Tstruct _node noattr))))
-          (Ssequence
-            (Sset _t'6
-              (Efield
-                (Ederef (Etempvar _l1 (tptr (Tstruct _list noattr)))
-                  (Tstruct _list noattr)) _tail
-                (tptr (Tstruct _node noattr))))
-            (Sassign
-              (Efield
-                (Ederef (Etempvar _t'5 (tptr (Tstruct _node noattr)))
-                  (Tstruct _node noattr)) _prev
-                (tptr (Tstruct _node noattr)))
-              (Etempvar _t'6 (tptr (Tstruct _node noattr))))))
-        Sskip))
+          (Sassign
+            (Efield
+              (Ederef (Etempvar _l1 (tptr (Tstruct _list noattr)))
+                (Tstruct _list noattr)) _head (tptr (Tstruct _node noattr)))
+            (Etempvar _t'5 (tptr (Tstruct _node noattr)))))))
     (Ssequence
       (Ssequence
         (Sset _t'3
@@ -1077,7 +1093,7 @@ Definition f_split_K := {|
                   (Efield
                     (Ederef (Etempvar _l (tptr (Tstruct _list noattr)))
                       (Tstruct _list noattr)) _size tuint)
-                  (Econst_int (Int.repr 0) tint)))))))
+                  (Econst_int (Int.repr 0) tuint)))))))
       (Ssequence
         (Sset _t'3
           (Efield
@@ -1090,7 +1106,7 @@ Definition f_split_K := {|
               (Scall (Some _t'2)
                 (Evar _move (Tfunction
                               (Tcons (tptr (Tstruct _list noattr))
-                                (Tcons tint Tnil))
+                                (Tcons tuint Tnil))
                               (tptr (Tstruct _node noattr)) cc_default))
                 ((Etempvar _l (tptr (Tstruct _list noattr))) ::
                  (Etempvar _k tuint) :: nil))

@@ -65,6 +65,7 @@ unsigned get_size (struct list * l){
     return l->size;
 }
 
+
 void push_back (struct list * l, unsigned int v){
     struct node * nd = (struct node *) mallocN(sizeof (struct node));
     nd->val = v;
@@ -130,11 +131,11 @@ void pop_front (struct list * l){
     //return res;
 }
 
-struct node * move (struct list * l, int pos){
+struct node * move (struct list * l, unsigned int pos){
     struct node * res = l->head;
     while (pos > 0){
         res = res->next;
-        pos -= 1;
+        pos -= 1u;
     }
     return res;
 }
@@ -157,7 +158,7 @@ void insert (struct list * l, int pos, unsigned int v){
     }
 }
 
-void delete (struct list * l, int pos, unsigned int v){
+void delete (struct list * l, unsigned int pos, unsigned int v){
     // position : 0-based
     if (pos == 0){
         pop_front(l);
@@ -173,11 +174,16 @@ void delete (struct list * l, int pos, unsigned int v){
 }
 
 void merge (struct list * l1, struct list * l2){
-    if (l1->tail != NULL){
-        l1->tail->next = l2->head;
-    }
     if (l2->head != NULL){
         l2->head->prev = l1->tail;
+    }else {
+        freeN(l2, sizeof (struct list));
+        return ;
+    }
+    if (l1->tail != NULL){
+        l1->tail->next = l2->head;
+    }else {
+        l1->head = l2->head;
     }
     l1->tail = l2->tail;
     l1->size += l2->size;
@@ -193,7 +199,7 @@ struct list * split_K (struct list * l, unsigned int k){
         res->size = l->size;
         l->head = NULL;
         l->tail = NULL;
-        l->size = 0;
+        l->size = 0u;
     }else if (k < l->size){
         struct node * nd = move(l, k);
         res->tail = l->tail;
@@ -206,3 +212,5 @@ struct list * split_K (struct list * l, unsigned int k){
     }
     return res;
 }
+
+
