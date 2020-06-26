@@ -88,19 +88,14 @@ Proof.
   - simpl. exact IHn.
 Qed.
 
-Lemma list_decomposition : forall l n, exists (suf : list Z), 
-  l = (list_prefix l n) ++ suf.
+(* TODO: not sure whether useful *)
+Lemma prefix_whole : forall l, 
+  list_prefix l (length l) = l.
 Proof.
-  intros l. induction l.
-  - intros. exists nil. simpl. rewrite nil_prefix_nil. reflexivity.
-  - intros. destruct n.
-    + exists (a :: l). simpl. reflexivity.
-    + specialize (IHl n). destruct IHl as [suf H].
-      simpl list_prefix.
-      exists suf. simpl.
-      rewrite <- H.
-      reflexivity. 
-Qed.
+  intros. induction l.
+  - apply nil_prefix_nil.
+  - simpl. rewrite IHl. reflexivity.
+Qed.  
 
 Lemma list_cons_app : forall l1 x, 
   exists (l2 : list Z) (a : Z), 
@@ -120,14 +115,38 @@ Proof.
       * rewrite H2. simpl. reflexivity.
 Qed.
 
-(* TODO: not sure whether useful *)
-Lemma prefix_whole : forall l, 
-  list_prefix l (length l) = l.
+Lemma list_decomposition : forall l n, (n <= length l)%nat ->
+  exists (suf : list Z), 
+    l = (list_prefix l n) ++ suf /\ length (list_prefix l n) = n /\
+      length suf = ((length l) - n)%nat.
 Proof.
-  intros. induction l.
-  - apply nil_prefix_nil.
-  - simpl. rewrite IHl. reflexivity.
-Qed.  
+  intros l. induction l.
+  - intros. exists nil. simpl. rewrite nil_prefix_nil. 
+    inversion H. tauto.
+  - intros. 
+    inversion H.
+    + destruct n; simpl in H0; [ discriminate | ].
+      injection H0 as H0.
+      exists nil.
+      rewrite app_nil_r.
+      rewrite prefix_whole.
+      do 2 (split; [ tauto | ]).
+      simpl length.
+      lia.
+    + destruct n.
+      * simpl in H1.
+        exists (a :: l).
+        do 2 (split; [ tauto | ]).
+        lia.
+      * simpl.
+        assert (n <= Datatypes.length l)%nat by lia.
+        apply IHl in H2.
+        destruct H2 as [suf H2].
+        destruct H2 as [? [? ?]].
+        exists suf.
+        split; [ rewrite H2 at 1; reflexivity | ].
+        split; [ lia | assumption ].
+Qed.
 
 Lemma list_nth_nil : forall n, 
   list_nth_out nil n = (nil, None, nil).
@@ -540,6 +559,16 @@ Proof.
     entailer!.
 Qed.
 
+Lemma list_1n_app_one : forall l1 x head tail p prev next, 
+  list_1n_rep l1 head tail prev p *
+    node_rep x tail next p 
+  |-- list_1n_rep (l1 ++ [x]) head p prev next.
+Proof.
+  intros. eapply derives_trans; [ | apply list_1n_merge 
+    with (tail1:=tail) (head2:=p) ].
+  simpl list_1n_rep. Exists next. entailer!.
+Qed.
+
 Definition node_in_list (l1 l2 : list Z) (x : Z) (head tail p : val) : mpred :=
   EX tail1 : val, EX head2 : val, 
     list_1n_rep l1 head tail1 nullval p * 
@@ -878,9 +907,9 @@ Definition Gprog : funspecs :=
     (* pop_back_spec : By Jiale Zhang *)
     (* push_front_spec *)
     (* pop_front_spec : By Mengning Li *)
-    move_spec;
+    move_spec;              (* OK! *)
     merge_spec;             (* OK! *)
-    split_K_spec
+    split_K_spec            (* OK! *)
     (* insert_spec *)
     (* delete_spec *)
   ]).
@@ -990,12 +1019,14 @@ Proof.
       unfold list_single_out.
       (* TODO：和下面的重复好多 *)
       destruct (list_nth_out l k) as [[l1 z] l2] eqn:E.
+      pose proof E as E_copy.
       apply list_nth_split in E.
       destruct E as [E1 E2].
       pose proof (list_index_some l k H3).
       destruct H4 as [x E3].
       rewrite E3 in E2.
       subst.
+      apply list_nth_combine in E_copy.
       unfold node_in_list.
       Intros tail1 head2.
       forward.
@@ -1031,7 +1062,67 @@ Proof.
       forward.                          (* return res; *)
       Exists vret (x :: l2).
       entailer!.
-Abort.
+      unfold_list_rep.
+      Exists head head' res tail.
+      sep_apply list_1n_app_one.
+      rewrite <- H4.
+      replace (Vint (Int.repr 0)) with nullval by auto.
+      entailer!.
+      simpl list_1n_rep at 2.
+      Exists head2.
+      unfold node_rep.
+      entailer!.
+      (* use list_decomposition *)
+      pose proof (list_decomposition ((z :: l1) ++ [x] ++ l2) (S k) H).
+      rewrite <- Heql1 in H15.
+      destruct H15 as [suf H15].
+      destruct H15 as [? [? ?]].
+      apply app_inv_head in H15.
+      subst suf.
+      simpl app in *.
+      replace (Z.pos (Pos.of_succ_nat k)) with (Z.of_nat (S k)) by lia.
+      rewrite <- H16.
+      rewrite H16 at 2.
+      replace (Z_length (z :: l1 ++ x :: l2) - Z.of_nat (S k)) with
+        (Z.of_nat (Datatypes.length (z :: l1 ++ x :: l2) - S k)).
+      2: {
+        unfold Z_length.
+        lia.
+      }
+      rewrite <- H17.
+      unfold Z_length.
+      entailer!.
+    }
+    { (* k = length l *)
+      unfold Z_length in H2.
+      assert (length l = k)%nat.
+      { 
+        (* TODO：这段真的复杂 *)
+        unfold Int.unsigned, Int.intval in H2.
+        simpl in H2.
+        rewrite Int.Z_mod_modulus_eq in H2.
+        assert (100 < Int.modulus) by rep_lia.
+        assert (Z.of_nat (Datatypes.length l) < Int.modulus) by rep_lia.
+        pose proof (Zle_0_nat (Datatypes.length l)).
+        assert (0 <= Z.of_nat (Datatypes.length l) < Int.modulus)
+          by rep_lia.
+        pose proof (Zmod_small (Z.of_nat (Datatypes.length l)) (Int.modulus) H6).
+        rewrite H7 in H2.
+        rewrite <- Nat2Z.inj_ge in H2.
+        lia.
+      }
+      forward.                          (* return res; *)
+      Exists vret (@nil Z).
+      rewrite prefix_whole.
+      rewrite app_nil_r.
+      unfold_list_rep.
+      Exists head tail.
+      Exists nullval nullval.
+      simpl list_1n_rep at 3.
+      entailer!.
+    }
+  }
+Qed.
 
 (* proof for list_new *)
 Theorem body_list_new: 
